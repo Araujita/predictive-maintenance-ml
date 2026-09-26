@@ -1,65 +1,65 @@
 import os
 import matplotlib.pyplot as plt
 
-from src.data_prep import carregar_e_limpar, balancear_dados
-from src.train import comparar_modelos, treinar_modelo, obter_importancia_features
-from src.evaluate import encontrar_melhor_limiar, calcular_roi_limiar_padrao
+from src.data_prep import load_and_clean, balance_data
+from src.train import compare_models, train_model, get_feature_importance
+from src.evaluate import find_best_threshold, calculate_default_threshold_roi
 
 os.makedirs('images', exist_ok=True)
 
-# 1. Preparar os dados
-X, y = carregar_e_limpar('data/raw/predictive_maintenance.csv')
-X_treino, X_teste, y_treino, y_teste = balancear_dados(X, y)
+# 1. Prepare the data
+X, y = load_and_clean('data/raw/predictive_maintenance.csv')
+X_train, X_test, y_train, y_test = balance_data(X, y)
 
-# 2. Comparar modelos com validação cruzada (evita escolher um modelo
-#    apenas com base num único split, que pode ser enganoso)
-print("=== Comparação de modelos (validação cruzada, 5-fold) ===")
-resultados_cv = comparar_modelos(X_treino, y_treino, cv=5)
-melhor_modelo_nome = resultados_cv.iloc[0]['modelo']
-print(f"\nMelhor modelo: {melhor_modelo_nome}\n")
+# 2. Compare models with cross-validation (avoids picking a model based
+#    solely on a single split, which can be misleading)
+print("=== Model comparison (5-fold cross-validation) ===")
+cv_results = compare_models(X_train, y_train, cv=5)
+best_model_name = cv_results.iloc[0]['model']
+print(f"\nBest model: {best_model_name}\n")
 
-# 3. Treinar o modelo final escolhido
-modelo = treinar_modelo(X_treino, y_treino, tipo=melhor_modelo_nome)
+# 3. Train the chosen final model
+model = train_model(X_train, y_train, model_type=best_model_name)
 
-# 4. Avaliar financeiramente: comparar limiar padrão (0.5) vs. limiar otimizado
-roi_padrao = calcular_roi_limiar_padrao(modelo, X_teste, y_teste)
-limiar_ideal, lucro_estimado, historico_limiares = encontrar_melhor_limiar(
-    modelo, X_teste, y_teste
+# 4. Financial evaluation: compare default threshold (0.5) vs. optimized threshold
+default_roi = calculate_default_threshold_roi(model, X_test, y_test)
+best_threshold, estimated_profit, threshold_history = find_best_threshold(
+    model, X_test, y_test
 )
 
-print("=== Resultado financeiro ===")
-print(f"ROI com limiar padrão (0.5):   {roi_padrao:,.0f} EUR")
-print(f"ROI com limiar otimizado ({limiar_ideal:.2f}): {lucro_estimado:,.0f} EUR")
-print(f"Ganho da otimização do limiar:  {lucro_estimado - roi_padrao:,.0f} EUR")
+print("=== Financial result ===")
+print(f"ROI with default threshold (0.5):    {default_roi:,.0f} EUR")
+print(f"ROI with optimized threshold ({best_threshold:.2f}): {estimated_profit:,.0f} EUR")
+print(f"Gain from threshold optimization:     {estimated_profit - default_roi:,.0f} EUR")
 
-# 5. Importância das features (apenas para modelos baseados em árvores)
-if hasattr(modelo, 'feature_importances_'):
-    importancias = obter_importancia_features(modelo, X.columns)
-    print("\n=== Importância das features ===")
-    print(importancias.to_string(index=False))
+# 5. Feature importance (tree-based models only)
+if hasattr(model, 'feature_importances_'):
+    importance_df = get_feature_importance(model, X.columns)
+    print("\n=== Feature importance ===")
+    print(importance_df.to_string(index=False))
 
     plt.figure(figsize=(8, 5))
-    plt.barh(importancias['feature'][::-1], importancias['importancia'][::-1])
-    plt.xlabel('Importância')
-    plt.title(f'Importância das Features ({melhor_modelo_nome})')
+    plt.barh(importance_df['feature'][::-1], importance_df['importance'][::-1])
+    plt.xlabel('Importance')
+    plt.title(f'Feature Importance ({best_model_name})')
     plt.tight_layout()
     plt.savefig('images/feature_importance.png', dpi=150)
-    print("\nGráfico guardado em images/feature_importance.png")
+    print("\nChart saved to images/feature_importance.png")
 
-# 6. Gráfico de ROI vs. limiar de decisão
+# 6. ROI vs. decision threshold chart
 plt.figure(figsize=(8, 5))
-plt.plot(historico_limiares['limiar'], historico_limiares['lucro'])
-plt.axvline(limiar_ideal, color='red', linestyle='--',
-            label=f'Limiar ótimo = {limiar_ideal:.2f}')
-plt.axhline(roi_padrao, color='gray', linestyle=':',
-            label=f'ROI limiar padrão (0.5)')
-plt.xlabel('Limiar de decisão')
-plt.ylabel('ROI estimado (EUR)')
-plt.title('ROI em função do limiar de decisão')
+plt.plot(threshold_history['threshold'], threshold_history['profit'])
+plt.axvline(best_threshold, color='red', linestyle='--',
+            label=f'Optimal threshold = {best_threshold:.2f}')
+plt.axhline(default_roi, color='gray', linestyle=':',
+            label=f'Default threshold ROI (0.5)')
+plt.xlabel('Decision threshold')
+plt.ylabel('Estimated ROI (EUR)')
+plt.title('ROI as a function of the decision threshold')
 plt.legend()
 plt.tight_layout()
-plt.savefig('images/roi_vs_limiar.png', dpi=150)
-print("Gráfico guardado em images/roi_vs_limiar.png")
+plt.savefig('images/roi_vs_threshold.png', dpi=150)
+print("Chart saved to images/roi_vs_threshold.png")
 
-print("\nO modelo está pronto a ser usado na fábrica!")
-print(f"Limiar ideal: {limiar_ideal:.2f} | Poupança estimada: {lucro_estimado:,.0f} EUR")
+print("\nThe model is ready to be used on the factory floor!")
+print(f"Optimal threshold: {best_threshold:.2f} | Estimated savings: {estimated_profit:,.0f} EUR")

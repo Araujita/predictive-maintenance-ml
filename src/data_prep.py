@@ -3,35 +3,35 @@ from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
 
 
-def carregar_e_limpar(caminho):
+def load_and_clean(path):
     """
-    Carrega o dataset e cria features de engenharia baseadas em
-    conhecimento de engenharia mecânica (fadiga do material).
+    Loads the dataset and creates engineered features based on
+    mechanical engineering domain knowledge (material fatigue).
     """
-    df = pd.read_csv(caminho)
+    df = pd.read_csv(path)
 
-    # Features de fadiga: combinam variáveis físicas para capturar
-    # o desgaste acumulado da ferramenta, que é um bom preditor de falha
-    df['Fadiga_Torque'] = df['Torque [Nm]'] * df['Tool wear [min]']
-    df['Diferenca_Temp'] = df['Process temperature [K]'] - df['Air temperature [K]']
-    df['Fadiga_Termica'] = df['Diferenca_Temp'] * df['Tool wear [min]']
+    # Fatigue features: combine physical variables to capture
+    # accumulated tool wear, which is a strong predictor of failure
+    df['Torque_Fatigue'] = df['Torque [Nm]'] * df['Tool wear [min]']
+    df['Temp_Diff'] = df['Process temperature [K]'] - df['Air temperature [K]']
+    df['Thermal_Fatigue'] = df['Temp_Diff'] * df['Tool wear [min]']
 
-    colunas_ignorar = ['UDI', 'Product ID', 'Type', 'Target', 'Failure Type']
-    X = df.drop(colunas_ignorar, axis=1, errors='ignore')
+    columns_to_drop = ['UDI', 'Product ID', 'Type', 'Target', 'Failure Type']
+    X = df.drop(columns_to_drop, axis=1, errors='ignore')
     y = df['Target']
     return X, y
 
 
-def balancear_dados(X, y, test_size=0.2, random_state=42):
+def balance_data(X, y, test_size=0.2, random_state=42):
     """
-    Faz o split treino/teste de forma estratificada (para preservar a
-    proporção de falhas em ambos os conjuntos) e aplica SMOTE apenas
-    no treino, evitando fuga de informação (data leakage) para o teste.
+    Performs a stratified train/test split (to preserve the failure
+    ratio in both sets) and applies SMOTE only on the training set,
+    avoiding data leakage into the test set.
     """
-    X_treino, X_teste, y_treino, y_teste = train_test_split(
+    X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
     smote = SMOTE(random_state=random_state)
-    X_treino_smote, y_treino_smote = smote.fit_resample(X_treino, y_treino)
+    X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
 
-    return X_treino_smote, X_teste, y_treino_smote, y_teste
+    return X_train_smote, X_test, y_train_smote, y_test
