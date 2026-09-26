@@ -22,8 +22,8 @@ threshold as a **cost-optimization problem**, not just a probability cutoff.
 1. **Feature engineering from mechanical domain knowledge**
    Instead of feeding raw sensor readings directly into the model, engineered
    features that reflect accumulated mechanical fatigue:
-   - `Fadiga_Torque` = Torque × Tool wear
-   - `Fadiga_Termica` = (Process temp − Air temp) × Tool wear
+   - `Torque_Fatigue` = Torque × Tool wear
+   - `Thermal_Fatigue` = (Process temp − Air temp) × Tool wear
 
    These turned out to be the two most important predictors in the final
    model (see `feature_importance.png`) — evidence the domain-informed
@@ -86,7 +86,7 @@ in estimated avoided downtime cost on the test set. This is the practical
 payoff of framing the problem financially rather than purely as a
 classification task.
 
-![ROI vs decision threshold](images/roi_vs_limiar.png)
+![ROI vs decision threshold](images/roi_vs_threshold.png)
 
 **Feature importance:**
 
@@ -94,10 +94,10 @@ classification task.
 |---|---|
 | Rotational speed [rpm] | 0.267 |
 | Torque [Nm] | 0.236 |
-| Fadiga_Torque (engineered) | 0.130 |
+| Torque_Fatigue (engineered) | 0.130 |
 | Tool wear [min] | 0.111 |
-| Diferenca_Temp (engineered) | 0.092 |
-| Fadiga_Termica (engineered) | 0.069 |
+| Temp_Diff (engineered) | 0.092 |
+| Thermal_Fatigue (engineered) | 0.069 |
 | Air temperature [K] | 0.056 |
 | Process temperature [K] | 0.039 |
 
@@ -135,7 +135,7 @@ python main.py
 
 This will print the model comparison results, the ROI at the default vs.
 optimized threshold, the feature importance ranking, and save two charts
-directly to `images/` (`feature_importance.png` and `roi_vs_limiar.png`),
+directly to `images/` (`feature_importance.png` and `roi_vs_threshold.png`),
 overwriting the ones already shown in this README.
 
 ## Possible next steps
